@@ -1,0 +1,37 @@
+{
+  "system": "randann_student_swa",
+  "path": "full2048_tta8",
+  "rule": "0.35,0,0.99,300,0.85",
+  "pq": 0.4590928994089272,
+  "tp": 929.0,
+  "fp": 466.0,
+  "fn": 465.0,
+  "matched_pairs": 929,
+  "iou_mean": 0.6891335287682978,
+  "iou_median": 0.694775435380385,
+  "dice_mean": 0.8126698764226793,
+  "dice_median": 0.819902650081125,
+  "gt_multi_match": 0.0,
+  "pred_multi_match": 0.0,
+  "gt_degree_counts": {
+    "1": 929,
+    "0": 472
+  },
+  "pred_degree_counts": {
+    "1": 929,
+    "0": 459
+  },
+  "gt_multi_overlap": 0.02426837972876517,
+  "pred_multi_overlap": 0.051152737752161385,
+  "gt_degree_counts_overlap": {
+    "1": 1165,
+    "0": 202,
+    "2": 34
+  },
+  "pred_degree_counts_overlap": {
+    "1": 1088,
+    "0": 229,
+    "2": 68,
+    "3": 3
+  }
+}

@@ -1,0 +1,293 @@
+% =============================================================================
+% COPYRIGHT AND DISCLAIMER
+% =============================================================================
+% This file is provided as a convenience template for competition participants.
+% By using it, you accept full responsibility for compliance with all applicable
+% copyright, licensing, and usage rules of the Association for Computing
+% Machinery (ACM) and of any LaTeX packages you load (including, without
+% limitation, the "acmart" document class and related ACM materials).
+%
+% Consult ACM's official publication, template, and copyright policies before
+% using this setup for any purpose other than this competition. Do not assume
+% that this template may be reused, redistributed, or submitted elsewhere
+% without independently verifying ACM's current rules.
+%
+% Use of the "acmart" class, the "sigconf" option, or ACM-style formatting in
+% this template does NOT mean that this report, this competition, its organizers,
+% or any resulting PDF is sponsored, endorsed, affiliated with, or published by
+% ACM. ACM trademarks and branding remain the property of ACM.
+%
+% Template packages live in preamble.tex.
+% Citations live in main.bib. Edit this file with your paper content.
+% =============================================================================
+
+\documentclass[sigconf]{acmart}
+\input{preamble}
+
+% Guide styling: \guideStyletrue = show gray italic hints; \guideStylefalse = omit them
+\guideStylefalse
+
+\begin{document}
+
+\title{Efficient Solar Filament Segmentation at Ensemble Parity}
+\subtitle{A Solution to the Solar Filament Segmentation Challenge 2026} % DO NOT CHANGE
+
+
+\author{Alisher Myrgyyassov}
+\email{your.email@example.com}   % TODO: replace before submission
+
+\begin{abstract}
+Solar filaments are thin, low-contrast chromospheric structures whose instance
+segmentation is dominated by annotator disagreement and by fragmentation or
+over-merging errors. We describe a compact ConvNeXt-atto U-Net (4.28\,M
+parameters) trained with knowledge distillation, randomized-annotator targets
+and stochastic weight averaging, then deployed with single-pass 2048-pixel
+inference, eight-view dihedral test-time augmentation and a decoupled ``KEEP''
+instance-acceptance rule. On the 107-file validation split the student reaches
+an exact multi-annotator Panoptic Quality (PQ) of 0.4591 and a public
+leaderboard score of 0.38---equal to a 171\,M four-model ensemble---while using
+107\,GMAC and 103\,ms per image (40$\times$ fewer parameters and
+$\sim$30$\times$ fewer MACs at equal leaderboard score). Under the official
+IoU$>0.5$ matching, the submitted system produces no one-to-many or
+many-to-one relations; at IoU$>0$ only 2.4\% of ground-truth instances and
+5.1\% of predictions have multiple partners. The decoupled KEEP rule alone is
+worth +0.0158 nested-CV PQ and moved the leaderboard from 0.35 to 0.37 with no
+retraining; full-disk inference and TTA added the final quantum to 0.38.
+\end{abstract}
+
+\maketitle
+
+% ==================================== %
+%              INTRODUCTION            %
+% ==================================== %
+\section{Introduction}
+    This report goes over the details of our submitted solution to the Solar Filament Segmentation Challenge~2026 \cite{filament-segmentation-2026}. The challenge, launched on July~10,~2026, is organized by the Earth-Space AI Research (ESAIR) Lab\footnote{\href{https://www.esairlab.com/home}{www.esairlab.com/}}. This challenge utilizes the MAGFiLO dataset for evaluation of the segmentation algorithms \cite{ahmadzadeh2024dataset}.
+
+    Our contribution is threefold. (i) We show that the binding constraint of
+    the previous system was not model capacity but a coupled post-processing
+    rule: decoupling the contour threshold from instance acceptance yields
+    +0.0158 nested-CV PQ and +0.02 leaderboard without retraining. (ii) A
+    4.28\,M-parameter distilled student, fine-tuned with randomized-annotator
+    targets and SWA, matches a 171\,M four-model ensemble at PQ 0.38. (iii) The
+    resulting pipeline is single-pass, deterministic and reproducible; its
+    weights, inference notebook and verification scripts are released.
+
+
+% ==================================== %
+%              METHODOLOGY             %
+% ==================================== %
+\section{Methodology}\label{sec:methodology}
+
+\paragraph{Data and split.}
+MAGFiLO contains 707 GONG H-$\alpha$ full-disk images ($2048\times2048$) with
+1--3 expert annotators per image (1{,}154 records; 8{,}199 instance masks).
+We split \emph{files}, not annotator records, 85/15 (600 train / 107 validation),
+so no image appears in both sets through a different annotator. The exact
+metric is computed against every annotator's mask with all-pairs IoU$>0.5$
+matching.
+
+\paragraph{Preprocessing.}
+Images are read as raw 8-bit grayscale. At inference the solar disk is detected
+on a $4\times$ downsample (threshold, morphological close, convex hull, erosion)
+and used only as an outside-disk gate. The single-channel image is replicated to
+three channels and normalized on the GPU with ImageNet mean/std, matching the
+pretrained stem. No CLAHE or radial flattening is used; both were falsified on
+this data.
+
+\paragraph{Model and training.}
+The student is a ConvNeXt-atto encoder \cite{liu2022convnext} with a four-stage
+U-Net decoder \cite{ronneberger2015unet} (channels 128/64/32/16), 4.28\,M
+parameters. It is trained on 1024-pixel crops with a balanced loss
+$0.5\,\mathrm{BCE}+0.5\,\mathrm{Tversky}(\alpha=\beta=0.5)$, AdamW
+(lr $10^{-4}$), linear warmup followed by cosine annealing, and per-batch EMA
+(raw weights are used for inference; EMA loses instance PQ). Targets are the
+first annotator's mask; a six-epoch recall fine-tune switches to
+\emph{random\_annotator} (all 1{,}154 records), starts from the complete-GT
+checkpoint, uses knowledge distillation from a five-teacher ensemble
+\cite{hinton2015distilling}, and averages the last three epochs (SWA). The
+fine-tune selects checkpoints by full-image PQ under the deployed rule, not by
+pixel Dice.
+
+\paragraph{Inference and post-processing.}
+The network is fully convolutional, so the whole $2048\times2048$ image is
+processed in one forward pass (107\,GMAC, 103\,ms FP16), optionally with eight
+dihedral views (D4 TTA8) whose sigmoid maps are averaged. We then apply the
+decoupled KEEP rule: form 8-connected components of $p>t_{\mathrm{lo}}$, and
+accept a component iff
+\[
+\mathrm{peak}(p)>t_{\mathrm{hi}},\qquad
+\mathrm{mean}(p)\ge m_{\mathrm{p}},\qquad
+\mathrm{area}\ge a_{\min}.
+\]
+The deployed student uses $t_{\mathrm{lo}}=0.35$, $t_{\mathrm{hi}}=0.99$,
+$m_{\mathrm{p}}=0.85$, $a_{\min}=100$. Components are exported as COCO RLE.
+The nested-CV optimum was $a_{\min}=300$; the two are indistinguishable on
+validation (0.45909 vs 0.45906), and the submitted CSV uses 100.
+The accuracy reference (S2) uses a 171\,M four-model 1024-pixel ensemble with
+$t_{\mathrm{lo}}=0.35$, $t_{\mathrm{hi}}=0$, $m_{\mathrm{p}}=0.80$,
+$a_{\min}=100$; the leanest point (S4) uses a 64-wide decoder and
+$t_{\mathrm{lo}}=0.30$, $t_{\mathrm{hi}}=0.99$, $m_{\mathrm{p}}=0.85$,
+$a_{\min}=100$.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=4mm and 4mm,
+  box/.style={draw, rounded corners=2pt, align=center, font=\scriptsize,
+              minimum height=7mm, text width=16mm, inner sep=2pt},
+  arr/.style={-{Latex[length=1.6mm]}, thick}]
+\node[box] (img) {H-$\alpha$\\$2048^2$};
+\node[box, right=of img] (pre) {disk mask\\+ normalize};
+\node[box, right=of pre] (net) {ConvNeXt-atto\\U-Net\\4.28\,M};
+\node[box, right=of net] (tta) {single pass\\+ D4 TTA8};
+\node[box, below=8mm of tta] (keep) {KEEP rule\\$t_{\mathrm{lo}},t_{\mathrm{hi}}$\\$m_{\mathrm{p}},a_{\min}$};
+\node[box, left=of keep] (rle) {COCO RLE\\submission};
+\foreach \a/\b in {img/pre,pre/net,net/tta,tta/keep,keep/rle}
+  \draw[arr] (\a) -- (\b);
+\end{tikzpicture}
+\caption{End-to-end inference pipeline. Training (KD5 + random\_annotator +
+SWA) is performed once; the released notebook reproduces the submission from
+the stored weights without retraining.}
+\label{fig:pipeline}
+\end{figure}
+
+
+% ==================================== %
+%              EVALUATION              %
+% ==================================== %
+\section{Evaluation}\label{sec:evaluation}
+
+\paragraph{Protocol.}
+We use the exact competition metric: multi-annotator per-image ground truth and
+all-pairs IoU$>0.5$ matching, giving
+$\mathrm{PQ}=\frac{\sum_{(p,g)\in TP}\mathrm{IoU}(p,g)}
+{|TP|+\frac12|FP|+\frac12|FN|}$ \cite{kirillov2019panoptic}. Rule and ensemble
+choices are selected with nested 5-fold cross-validation on the 107 validation
+files and compared with a paired file-level bootstrap (4{,}000 resamples).
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+System & Params & MACs & Val PQ & LB \\
+\midrule
+S2 ensemble (4$\times$1024, TTA8) & 171.0\,M & 3.23\,TMAC & \textbf{0.4773} & \textbf{0.38} \\
+\textbf{S3 student (submitted)}   & \textbf{4.28\,M} & \textbf{107\,GMAC} & 0.4591 & \textbf{0.38} \\
+S4 student (64-wide, leanest)     & 3.75\,M & 64.8\,GMAC & 0.4599 & 0.37 \\
+\bottomrule
+\end{tabular}
+\caption{Validation PQ (107 files, exact metric) and public leaderboard.
+MACs are one forward per model, not multiplied by the eight TTA views.}
+\label{tab:results}
+\end{table}
+
+\paragraph{Results.}
+Table~\ref{tab:results} summarises the three operating points. The submitted
+student reaches 0.4591 validation PQ and 0.38 on the public leaderboard, equal
+to the 171\,M ensemble, at 40$\times$ fewer parameters and about 30$\times$
+fewer MACs on the same single-pass path. The 3.75\,M leanest point is 0.0008
+better in validation but lands one leaderboard quantum lower (0.37), which is
+within the public-subset noise floor. The historical 0.35 plateau was therefore
+a decision-rule and inference-path problem, not a model-capacity ceiling.
+
+\paragraph{Accuracy distributions.}
+On the 929 matched validation pairs, mean IoU is 0.689 (median 0.695) and mean
+Dice is 0.813 (median 0.820); Fig.~\ref{fig:dist} shows the distributions. The
+matched-pair mass is concentrated at high overlap, consistent with a contour
+that preserves thin barbs rather than smoothing them.
+
+\paragraph{Fragmentation and over-merging.}
+Under the official IoU$>0.5$ matching, the submitted system has \emph{zero}
+one-to-many and many-to-one relations: every matched ground-truth instance has
+exactly one prediction and vice versa. At the looser IoU$>0$ diagnostic, 2.4\%
+of ground-truth instances overlap more than one prediction and 5.1\% of
+predictions overlap more than one ground-truth instance
+(Fig.~\ref{fig:dist}, right). The KEEP rule is what removes the residual
+fragmented/merged candidates before they reach the metric.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}{0.49\linewidth}
+  \includegraphics[width=\linewidth]{figures/iou_dist.png}
+  \caption{IoU}
+\end{subfigure}\hfill
+\begin{subfigure}{0.49\linewidth}
+  \includegraphics[width=\linewidth]{figures/dice_dist.png}
+  \caption{Dice}
+\end{subfigure}
+
+\vspace{2pt}
+\begin{subfigure}{0.92\linewidth}
+  \includegraphics[width=\linewidth]{figures/m2n_dist.png}
+  \caption{Fragmentation / over-merging relations}
+\end{subfigure}
+\caption{Matched-pair IoU/Dice and one-to-many/many-to-one relations for S3 on
+the 107 validation files. Relations are shown at IoU$>0$ (left bars) and under
+the official IoU$>0.5$ matching (right bars).}
+\label{fig:dist}
+\end{figure}
+
+\paragraph{Error anatomy.}
+At the deployed rule S3 has 933 matched instances, 474 false positives and 461
+false negatives. The FNs decompose into 292 missed (63.3\%), 163 boundary
+(35.4\%) and 6 merged (1.3\%). Moving from the old coupled rule to KEEP on the
+same TTA8 probabilities changes TP/FP/FN from 916/575/478 to 933/474/461,
+raising RQ from 0.635 to 0.666 while SQ moves from 0.686 to 0.689: the rule adds
+17 true positives and removes 101 false positives. Post-acceptance dilation and
+erosion are both negative (dil1 $-0.025$, dil2 $-0.094$, ero1 $-0.022$ PQ), so
+the residual is not a thin-boundary problem.
+
+\paragraph{Strengths and weaknesses.}
+The system is fast, small, and free of explicit fragmentation/merging under the
+official matching. Its weakness is recall: 63.3\% of remaining FNs are pure
+misses and 35.4\% are boundary/agreement failures, and the labels themselves
+are noisy (inter-annotator union-mask IoU
+0.467), so validation absolute levels are optimistic relative to the sparser
+test labels. The public leaderboard is quantised at 0.01 and cannot arbitrate
+sub-0.01 differences; we therefore report deltas and bootstrap intervals, not
+just absolute PQ. More positive training data (5-fold over all 707 images) is
+the most promising remaining lever.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/qualitative.png}
+\caption{Representative validation predictions (green) against expert
+annotations (yellow) on GONG H-$\alpha$. Thin barbs and small filaments are
+retained; the remaining failures are predominantly missed low-contrast
+structures.}
+\label{fig:qual}
+\end{figure}
+
+\paragraph{Qualitative comparison.}
+Fig.~\ref{fig:qual} shows representative full-disk examples. The predicted
+contours follow the elongated filament bodies and many barbs; the dominant
+failure mode is a missed low-contrast filament rather than a spurious or merged
+one. Limb artifacts are suppressed by the solar-disk gate.
+
+\paragraph{Reproducibility.}
+The released repository contains the submitted weight (16.4\,MB), a
+requirements file, a notebook that reproduces the CSV from the test images
+without retraining, and a 13-check submission verifier. The submitted CSV has
+1{,}279 rows over 177/180 test images (the three empty images are legitimate)
+and passes all checks. Recomputing from the released weight yields 1{,}280 rows:
+one boundary component on one image differs because the reference CSV was
+written from the FP16 probability cache, not re-inferred.
+
+
+% ==================================== %
+%            ACKNOWLEDGMENT            %
+% ==================================== %
+\section{Acknowledgment}\label{sec:acknowledgment}
+    % Do not change
+    The organization of the Filament Segmentation Challenge 2026 is partially supported by the U.S. National Science Foundation (NSF) under Grant No. 2209912 and 2433781, directorate for Computer and Information Science and Engineering (CSE), and Office of Advanced Cyberinfrastructure (OAC), and Grant No. 2511630, AST Division Of Astronomical Sciences and MPS Directorate for Mathematical and Physical Sciences.
+
+    The Filament Segmentation Challenge 2026 is sponsored by the U.S. National Science Foundation (NSF) National Solar Observatory (NSO). 
+
+    This work utilizes GONG data obtained by the NSO Integrated Synoptic Program, managed by the National Solar Observatory, which is operated by the Association of Universities for Research in Astronomy (AURA), Inc. under a cooperative agreement with the National Science Foundation and with contribution from the National Oceanic and Atmospheric Administration. The GONG network of instruments is hosted by the Big Bear Solar Observatory, High Altitude Observatory, Learmonth Solar Observatory, Udaipur Solar Observatory, Instituto de Astrofísica de Canarias, and Cerro Tololo Interamerican Observatory.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{main}
+
+\end{document}

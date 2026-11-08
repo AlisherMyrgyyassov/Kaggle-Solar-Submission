@@ -1,0 +1,9 @@
+/data/*
+!/data/README.md
+/output/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+notebook_exec.log
+submissions/regenerated_*.csv
+submissions/example_prediction.png
