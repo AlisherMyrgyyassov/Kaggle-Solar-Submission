@@ -132,22 +132,34 @@ $a_{\min}=100$.
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-  node distance=4mm and 4mm,
+  node distance=2.5mm and 2.5mm,
   box/.style={draw, rounded corners=2pt, align=center, font=\scriptsize,
-              minimum height=7mm, text width=16mm, inner sep=2pt},
-  arr/.style={-{Latex[length=1.6mm]}, thick}]
-\node[box] (img) {H-$\alpha$\\$2048^2$};
-\node[box, right=of img] (pre) {disk mask\\+ normalize};
-\node[box, right=of pre] (net) {ConvNeXt-atto\\U-Net\\4.28\,M};
-\node[box, right=of net] (tta) {single pass\\+ D4 TTA8};
-\node[box, below=8mm of tta] (keep) {KEEP rule\\$t_{\mathrm{lo}},t_{\mathrm{hi}}$\\$m_{\mathrm{p}},a_{\min}$};
-\node[box, left=of keep] (rle) {COCO RLE\\submission};
-\foreach \a/\b in {img/pre,pre/net,net/tta,tta/keep,keep/rle}
+              minimum height=8mm, text width=13mm, inner sep=2pt, text=repnavy},
+  train/.style={box, fill=repnavy!8, draw=repnavy!55},
+  infer/.style={box, fill=repteal!12, draw=repteal!65},
+  weight/.style={box, fill=repgold!28, draw=repgold!75},
+  arr/.style={-{Latex[length=1.4mm]}, thick, draw=black!65}]
+% training row
+\node[train] (data) {H-$\alpha$ +\\annot. masks};
+\node[train, right=of data] (crops) {1024 crops\\+ augment};
+\node[train, right=of crops] (kd) {KD5 student\\4.28\,M};
+\node[weight, right=of kd] (swa) {SWA\\weights};
+\foreach \a/\b in {data/crops,crops/kd,kd/swa}
   \draw[arr] (\a) -- (\b);
+% inference row
+\node[infer, below=14mm of data] (test) {test $2048^2$};
+\node[infer, right=of test] (pre) {disk mask\\+ normalize};
+\node[infer, right=of pre] (unet) {ConvNeXt-atto\\U-Net};
+\node[infer, right=of unet] (tta) {TTA8};
+\node[infer, right=of tta] (keep) {KEEP +\\COCO RLE};
+\foreach \a/\b in {test/pre,pre/unet,unet/tta,tta/keep}
+  \draw[arr] (\a) -- (\b);
+\draw[arr, dashed] (swa.south) -- ++(0,-4mm) -| (unet.north);
 \end{tikzpicture}
-\caption{End-to-end inference pipeline. Training (KD5 + random\_annotator +
-SWA) is performed once; the released notebook reproduces the submission from
-the stored weights without retraining.}
+\caption{End-to-end pipeline. Navy: training (once), with KD5 teachers and SWA.
+Teal: inference per test image; the gold SWA weights initialize the U-Net.
+The released notebook reproduces the submission from the weights without
+retraining.}
 \label{fig:pipeline}
 \end{figure}
 
@@ -250,21 +262,47 @@ sub-0.01 differences; we therefore report deltas and bootstrap intervals, not
 just absolute PQ. More positive training data (5-fold over all 707 images) is
 the most promising remaining lever.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/qualitative.png}
-\caption{Representative validation predictions (green) against expert
-annotations (yellow) on GONG H-$\alpha$. Thin barbs and small filaments are
-retained; the remaining failures are predominantly missed low-contrast
-structures.}
+\includegraphics[width=0.94\linewidth]{figures/qualitative.png}
+\caption{Zoomed validation examples. Gold: ground truth; teal: prediction;
+blue in (d): a second annotator. (a) thin barbs, (b) a large curved filament
+near the limb, (c) a missed low-contrast filament, (d) annotators disagree at
+the ends while the prediction follows one. Insets show the full-disk location.}
 \label{fig:qual}
-\end{figure}
+\end{figure*}
 
 \paragraph{Qualitative comparison.}
-Fig.~\ref{fig:qual} shows representative full-disk examples. The predicted
-contours follow the elongated filament bodies and many barbs; the dominant
-failure mode is a missed low-contrast filament rather than a spurious or merged
-one. Limb artifacts are suppressed by the solar-disk gate.
+Fig.~\ref{fig:qual} shows zoomed validation examples. The prediction follows the
+elongated body and barbs in (a), the curved limb filament in (b), and one
+annotator's drawing in (d); the main failure in (c) is a missed low-contrast
+filament, not a spurious or merged one. Limb artifacts are suppressed by the
+solar-disk gate.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Effect (nested OOF) & $\Delta$PQ & 95\% CI \\
+\midrule
+KEEP vs coupled & +0.0158 & [0.0087, 0.0231] \\
+tiny + randann & +0.0127 & [0.0045, 0.0217] \\
+tiny + randann + SWA & +0.0105 & [0.0032, 0.0177] \\
+dec128 + randann + SWA & +0.0051 & [$-$0.0056, 0.0167] \\
+\bottomrule
+\end{tabular}
+\caption{Paired file-level bootstrap (4{,}000 resamples) for the rule and
+fine-tune deltas. All intervals are nested 5-fold OOF.}
+\label{tab:ablation}
+\end{table}
+
+\paragraph{Uncertainty and efficiency.}
+Table~\ref{tab:ablation} makes the uncertainty explicit: the KEEP rule and the
+tiny recall fine-tune are significant; the dec128 fine-tune is not. Table~\ref{tab:results}
+gives the efficiency: S3 is about 30$\times$ left of S2 at the same 0.38 LB, and
+S4 is the leanest point but one LB quantum lower.
 
 \paragraph{Reproducibility.}
 The released repository contains the submitted weight (16.4\,MB), a
