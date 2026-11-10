@@ -1,0 +1,124 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{6}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{} and \showURL{}.  The latter does
+%%% not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showURL}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showURL #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+\makeatletter
+\@ifundefined{NAT@parse@date}{}{\let\NAT@parse@date@orig\NAT@parse@date}
+\@ifundefined{NAT@parse@date}{}{\def\NAT@parse@date#1#2#3#4#5#6@@{\NAT@parse@date@orig#1#2#3#4#5#6@@\def\NAT@tempyear{0000}\def\NAT@tempexlab{{?}}\ifx\NAT@year\NAT@tempyear\ifx\NAT@exlab\NAT@tempexlab\def\NAT@date{[n.\,d.]}\else\edef\NAT@date{[n.\,d.]\NAT@exlab}\fi\fi}}
+\makeatother
+
+\bibitem[{Ahmadzadeh} et~al\mbox{.}(2024)]%
+        {ahmadzadeh2024dataset}
+\bibfield{author}{\bibinfo{person}{Azim {Ahmadzadeh}}, \bibinfo{person}{Rohan
+  {Adhyapak}}, \bibinfo{person}{Kartik {Chaurasiya}},
+  \bibinfo{person}{Laxmi~Alekhya {Nagubandi}}, \bibinfo{person}{V. {Aparna}},
+  \bibinfo{person}{Petrus~C. {Martens}}, \bibinfo{person}{Alexei {Pevtsov}},
+  \bibinfo{person}{Luca {Bertello}}, \bibinfo{person}{Alexander {Pevtsov}},
+  \bibinfo{person}{Naomi {Douglas}}, \bibinfo{person}{Samuel {McDonald}},
+  \bibinfo{person}{Apaar {Bawa}}, \bibinfo{person}{Eugene {Kang}},
+  \bibinfo{person}{Riley {Wu}}, \bibinfo{person}{Dustin~J. {Kempton}},
+  \bibinfo{person}{Aya {Abdelkarem}}, \bibinfo{person}{Patrick~M. {Copeland}},
+  {and} \bibinfo{person}{Sri~Harsha {Seelamneni}}.}
+  \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{{A dataset of manually annotated filaments from
+  H-alpha observations}}. In \bibinfo{booktitle}{\emph{Nature Scientific Data}}
+  \emph{(\bibinfo{series}{Nature Scientific Data}, Vol.~\bibinfo{volume}{11})}.
+  \bibinfo{publisher}{Springer}, Article \bibinfo{articleno}{1031},
+  \bibinfo{numpages}{1031}~pages.
+\newblock
+\href{https://doi.org/10.1038/s41597-024-03876-y}{doi:\nolinkurl{10.1038/s41597-024-03876-y}}
+
+
+\bibitem[Ahmadzadeh et~al\mbox{.}(2026)]%
+        {filament-segmentation-2026}
+\bibfield{author}{\bibinfo{person}{Azim Ahmadzadeh}, \bibinfo{person}{Dustin~J.
+  Kempton}, \bibinfo{person}{Qin Li}, {and} \bibinfo{person}{Alexei~A.
+  Pevtsov}.} \bibinfo{year}{2026}\natexlab{}.
+\newblock \bibinfo{title}{Solar Filament Segmentation Challenge 2026}.
+\newblock
+  \bibinfo{howpublished}{\url{https://kaggle.com/competitions/filament-segmentation-2026}}.
+\newblock
+\newblock
+\shownote{Kaggle}.
+
+
+\bibitem[Hinton et~al\mbox{.}(2015)]%
+        {hinton2015distilling}
+\bibfield{author}{\bibinfo{person}{Geoffrey Hinton}, \bibinfo{person}{Oriol
+  Vinyals}, {and} \bibinfo{person}{Jeff Dean}.}
+  \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Distilling the Knowledge in a Neural Network}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1503.02531}}
+  (\bibinfo{year}{2015}).
+\newblock
+
+
+\bibitem[Kirillov et~al\mbox{.}(2019)]%
+        {kirillov2019panoptic}
+\bibfield{author}{\bibinfo{person}{Alexander Kirillov},
+  \bibinfo{person}{Kaiming He}, \bibinfo{person}{Ross Girshick},
+  \bibinfo{person}{Carsten Rother}, {and} \bibinfo{person}{Piotr Doll{\'a}r}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Panoptic Segmentation}. In
+  \bibinfo{booktitle}{\emph{IEEE/CVF Conference on Computer Vision and Pattern
+  Recognition (CVPR)}}. \bibinfo{pages}{9404--9413}.
+\newblock
+
+
+\bibitem[Liu et~al\mbox{.}(2022)]%
+        {liu2022convnext}
+\bibfield{author}{\bibinfo{person}{Zhuang Liu}, \bibinfo{person}{Hanzi Mao},
+  \bibinfo{person}{Chao-Yuan Wu}, \bibinfo{person}{Christoph Feichtenhofer},
+  \bibinfo{person}{Trevor Darrell}, {and} \bibinfo{person}{Saining Xie}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{A {ConvNet} for the 2020s}. In
+  \bibinfo{booktitle}{\emph{IEEE/CVF Conference on Computer Vision and Pattern
+  Recognition (CVPR)}}. \bibinfo{pages}{11976--11986}.
+\newblock
+
+
+\bibitem[Ronneberger et~al\mbox{.}(2015)]%
+        {ronneberger2015unet}
+\bibfield{author}{\bibinfo{person}{Olaf Ronneberger}, \bibinfo{person}{Philipp
+  Fischer}, {and} \bibinfo{person}{Thomas Brox}.}
+  \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{{U-Net}: Convolutional Networks for Biomedical
+  Image Segmentation}. In \bibinfo{booktitle}{\emph{Medical Image Computing and
+  Computer-Assisted Intervention (MICCAI)}}. \bibinfo{pages}{234--241}.
+\newblock
+
+
+\end{thebibliography}

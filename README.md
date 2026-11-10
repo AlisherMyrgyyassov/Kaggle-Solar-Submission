@@ -29,7 +29,8 @@ cache_val_probs.py, keep_sweep.py       probability caches + nested-CV rule tuni
 eval_pq.py, eval_pq_v2.py               v1 fast matcher + exact multi-annotator PQ
 train_v2.py                             training / fine-tuning entry point
 tools/verify_submission.py              13-check submission CSV verifier
-notebooks/pipeline.ipynb                end-to-end reproduction (inference)
+notebooks/pipeline.ipynb                full pipeline: split, preprocessing, model, optional
+                                        training, inference, KEEP, submission, evaluation
 weights/                                submitted S3 + lean S4 checkpoints
 submissions/                            reference S3/S4/S2 CSVs
 report/                                 4-page technical report (LaTeX + PDF)
@@ -72,10 +73,14 @@ Reference CSV: `submissions/submission_keep_s3_light.csv`
 - SHA-256 `9ADF36A4E28AE44368F59E644F26FA105E7456ED7D8F5ED07ABF09ADC92F8217`
 - 13/13 verifier checks pass
 
-The reference was written from the FP16 test-probability cache. Recomputing
-from the released weight yields **1,280 rows**: one boundary component on one
-image crosses the acceptance threshold differently. All checks still pass; the
-difference is 0.08% of instances. Use CUDA + `--half` for the closest result.
+Re-inference from the released weight reproduces **1,277 of those 1,279 rows
+byte-for-byte**, and the reported validation PQ (0.4591) exactly, in about a
+minute on one GPU. The difference is a single image: two contours shift by one
+pixel and a third boundary component passes the area test, so the regenerated
+file has 1,280 rows — the hash differs by construction, not because the rule
+changed. The stored FP16 test cache is not a substitute: it differs from the
+submitted file on 31 rows across 22 images. Use CUDA + `--half`.
+
 The nested-CV optimum was `min_area=300`; 100 and 300 are indistinguishable on
 validation (0.45906 vs 0.45909), and the submitted CSV uses 100.
 
@@ -112,3 +117,12 @@ values above.
 Only the H-alpha competition images are used at inference. No external
 ground-truth metadata or test labels are used. The accuracy reference S2 is
 reported for comparison; only the submitted S3 and lean S4 weights are shipped.
+
+## Licence
+
+- **Code**: MIT — see `LICENSE`.
+- **Weights**: fine-tuned from timm's ImageNet-pretrained `convnext_atto`
+  backbone (Apache-2.0) and released under the same terms; the fine-tuned
+  parameters are ours.
+- **Data**: not redistributed; download from the competition page
+  (see `data/README.md`).

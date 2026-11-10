@@ -55,6 +55,11 @@ worth +0.0158 nested-CV PQ and moved the leaderboard from 0.35 to 0.37 with no
 retraining; full-disk inference and TTA added the final quantum to 0.38.
 \end{abstract}
 
+\ccsdesc[500]{Computing methodologies~Image segmentation}
+\ccsdesc[300]{Computing methodologies~Supervised learning}
+\keywords{solar filaments, instance segmentation, panoptic quality, knowledge
+distillation, model efficiency}
+
 \maketitle
 
 % ==================================== %
@@ -89,7 +94,9 @@ matching.
 \paragraph{Preprocessing.}
 Images are read as raw 8-bit grayscale. At inference the solar disk is detected
 on a $4\times$ downsample (threshold, morphological close, convex hull, erosion)
-and used only as an outside-disk gate. The single-channel image is replicated to
+and used only as an outside-disk gate. No external data is used at inference: the
+gate is derived from the test image itself.
+The single-channel image is replicated to
 three channels and normalized on the GPU with ImageNet mean/std, matching the
 pretrained stem. No CLAHE or radial flattening is used; both were falsified on
 this data.
@@ -97,19 +104,21 @@ this data.
 \paragraph{Model and training.}
 The student is a ConvNeXt-atto encoder \cite{liu2022convnext} with a four-stage
 U-Net decoder \cite{ronneberger2015unet} (channels 128/64/32/16), 4.28\,M
-parameters. It is trained on 1024-pixel crops with a balanced loss
+parameters. It is trained for 30 epochs on 1024-pixel crops (batch size 4,
+$\approx$5\,min per epoch on one GPU) with a balanced loss
 $0.5\,\mathrm{BCE}+0.5\,\mathrm{Tversky}(\alpha=\beta=0.5)$, AdamW
 (lr $10^{-4}$), linear warmup followed by cosine annealing, and per-batch EMA
 (raw weights are used for inference; EMA loses instance PQ). Targets are the
 first annotator's mask; a six-epoch recall fine-tune switches to
 \emph{random\_annotator} (all 1{,}154 records), starts from the complete-GT
-checkpoint, uses knowledge distillation from a five-teacher ensemble
-\cite{hinton2015distilling}, and averages the last three epochs (SWA). The
+checkpoint, uses knowledge distillation from a five-teacher ensemble (MSE,
+weight 5) \cite{hinton2015distilling}, and averages the last three epochs (SWA). The
 fine-tune selects checkpoints by full-image PQ under the deployed rule, not by
 pixel Dice.
 
 \paragraph{Inference and post-processing.}
-The network is fully convolutional, so the whole $2048\times2048$ image is
+Fig.~\ref{fig:pipeline} shows the end-to-end path. The network is fully
+convolutional, so the whole $2048\times2048$ image is
 processed in one forward pass (107\,GMAC, 103\,ms FP16), optionally with eight
 dihedral views (D4 TTA8) whose sigmoid maps are averaged. We then apply the
 decoupled KEEP rule: form 8-connected components of $p>t_{\mathrm{lo}}$, and
@@ -119,7 +128,7 @@ accept a component iff
 \mathrm{mean}(p)\ge m_{\mathrm{p}},\qquad
 \mathrm{area}\ge a_{\min}.
 \]
-The deployed student uses $t_{\mathrm{lo}}=0.35$, $t_{\mathrm{hi}}=0.99$,
+The submitted student (S3) uses $t_{\mathrm{lo}}=0.35$, $t_{\mathrm{hi}}=0.99$,
 $m_{\mathrm{p}}=0.85$, $a_{\min}=100$. Components are exported as COCO RLE.
 The nested-CV optimum was $a_{\min}=300$; the two are indistinguishable on
 validation (0.45909 vs 0.45906), and the submitted CSV uses 100.
@@ -156,9 +165,13 @@ $a_{\min}=100$.
   \draw[arr] (\a) -- (\b);
 \draw[arr, dashed] (swa.south) -- ++(0,-4mm) -| (unet.north);
 \end{tikzpicture}
+\Description{Two-row pipeline diagram: a training row (annotated H-alpha mask,
+1024-pixel crops, KD5 student, SWA weights) and an inference row (test image,
+disk mask and normalization, ConvNeXt-atto U-Net, eight-view TTA, KEEP rule,
+COCO RLE), with a dashed arrow carrying the SWA weights into the U-Net.}
 \caption{End-to-end pipeline. Navy: training (once), with KD5 teachers and SWA.
 Teal: inference per test image; the gold SWA weights initialize the U-Net.
-The released notebook reproduces the submission from the weights without
+The released notebook regenerates the submission from the weights without
 retraining.}
 \label{fig:pipeline}
 \end{figure}
@@ -213,11 +226,11 @@ that preserves thin barbs rather than smoothing them.
 \paragraph{Fragmentation and over-merging.}
 Under the official IoU$>0.5$ matching, the submitted system has \emph{zero}
 one-to-many and many-to-one relations: every matched ground-truth instance has
-exactly one prediction and vice versa. At the looser IoU$>0$ diagnostic, 2.4\%
-of ground-truth instances overlap more than one prediction and 5.1\% of
-predictions overlap more than one ground-truth instance
-(Fig.~\ref{fig:dist}, right). The KEEP rule is what removes the residual
-fragmented/merged candidates before they reach the metric.
+exactly one prediction and vice versa. At the looser IoU$>0$ diagnostic
+(Fig.~\ref{fig:dist}, lower left), 2.4\% of ground-truth instances overlap more
+than one prediction and 5.1\% of predictions overlap more than one ground-truth
+instance. The KEEP rule is what removes the residual fragmented/merged
+candidates before they reach the metric.
 
 \begin{figure}[t]
 \centering
@@ -235,9 +248,12 @@ fragmented/merged candidates before they reach the metric.
   \includegraphics[width=\linewidth]{figures/m2n_dist.png}
   \caption{Fragmentation / over-merging relations}
 \end{subfigure}
+\Description{Three panels: histograms of matched-pair IoU and Dice, and a
+two-panel bar chart counting the matched partners per instance at IoU greater
+than zero and at IoU greater than 0.5.}
 \caption{Matched-pair IoU/Dice and one-to-many/many-to-one relations for S3 on
-the 107 validation files. Relations are shown at IoU$>0$ (left bars) and under
-the official IoU$>0.5$ matching (right bars).}
+the 107 validation files. The lower subfigure counts matched partners at
+IoU$>0$ (left) and under the official IoU$>0.5$ matching (right).}
 \label{fig:dist}
 \end{figure}
 
@@ -250,6 +266,15 @@ raising RQ from 0.635 to 0.666 while SQ moves from 0.686 to 0.689: the rule adds
 17 true positives and removes 101 false positives. Post-acceptance dilation and
 erosion are both negative (dil1 $-0.025$, dil2 $-0.094$, ero1 $-0.022$ PQ), so
 the residual is not a thin-boundary problem.
+
+\paragraph{Member quality is not the ensemble's constraint.}
+The recall fine-tune is worth +0.0127 nested-OOF PQ on its own (95\% CI
+[0.0045, 0.0217]), yet adding it to the four-model ensemble at weights of 0.10,
+0.15 and 0.20 moves PQ by +0.0003, $-$0.0001 and +0.0002, and adding the
+distilled student at weight 0.10 gives +0.0001 ($-$0.0024 to +0.0026); every
+interval spans zero. A member can be materially better alone and worth nothing to
+the ensemble when the residual error is shared: all members miss the same
+unlabelled structures. Ensemble design is therefore also saturated.
 
 \paragraph{Strengths and weaknesses.}
 The system is fast, small, and free of explicit fragmentation/merging under the
@@ -264,19 +289,24 @@ the most promising remaining lever.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.94\linewidth]{figures/qualitative.png}
-\caption{Zoomed validation examples. Gold: ground truth; teal: prediction;
-blue in (d): a second annotator. (a) thin barbs, (b) a large curved filament
-near the limb, (c) a missed low-contrast filament, (d) annotators disagree at
-the ends while the prediction follows one. Insets show the full-disk location.}
+\includegraphics[width=0.92\linewidth]{figures/qualitative.png}
+\Description{Six zoomed validation crops in a 3 by 2 grid, each with a full-disk
+locator inset and a letter above it. Gold marks the ground truth, teal the
+prediction, blue a second annotator. Panels (a,b) follow the annotated filament,
+(c,d) miss it, and (e,f) follow one annotator where two disagree.}
+\caption{Zoomed validation examples. Gold: ground truth; teal: prediction; blue:
+a second annotator. (a,b) the prediction follows thin barbs and a large curved
+filament; (c,d) two filaments are missed outright; (e,f) two cases where the
+annotators disagree and the prediction follows one of them. Insets show the
+full-disk location.}
 \label{fig:qual}
 \end{figure*}
 
 \paragraph{Qualitative comparison.}
 Fig.~\ref{fig:qual} shows zoomed validation examples. The prediction follows the
-elongated body and barbs in (a), the curved limb filament in (b), and one
-annotator's drawing in (d); the main failure in (c) is a missed low-contrast
-filament, not a spurious or merged one. Limb artifacts are suppressed by the
+elongated body and barbs in (a), the curved filament in (b), and one annotator's
+drawing in (e) and (f); in (c) and (d) the filament is missed outright rather
+than spuriously detected or merged. Limb artifacts are suppressed by the
 solar-disk gate.
 
 \begin{table}[t]
@@ -305,25 +335,55 @@ gives the efficiency: S3 is about 30$\times$ left of S2 at the same 0.38 LB, and
 S4 is the leanest point but one LB quantum lower.
 
 \paragraph{Reproducibility.}
-The released repository contains the submitted weight (16.4\,MB), a
-requirements file, a notebook that reproduces the CSV from the test images
-without retraining, and a 13-check submission verifier. The submitted CSV has
-1{,}279 rows over 177/180 test images (the three empty images are legitimate)
-and passes all checks. Recomputing from the released weight yields 1{,}280 rows:
-one boundary component on one image differs because the reference CSV was
-written from the FP16 probability cache, not re-inferred.
+The submitted package contains the final weight (16.4\,MB), a
+requirements file, a 13-check submission verifier, and a notebook that runs the
+whole pipeline: file
+split, preprocessing, model, optional training, inference, KEEP post-processing,
+submission and validation scoring. On this hardware the notebook reproduces the
+reported validation PQ (0.4591) exactly on the same 107 files, and the submitted
+CSV (1{,}279 rows over 177/180 test images, the three empty images legitimate,
+all checks passing) on 1{,}277 of its 1{,}279 rows byte-for-byte. That difference
+is one image, where two contours move by a pixel and a third boundary component
+passes the area test, giving 1{,}280 rows. The stored FP16 test cache is not a
+substitute for re-inference: it differs from the submitted file on 31 rows across
+22 images. Re-inference takes about a minute on one GPU.
+
+\paragraph{Limitations.}
+Two caveats bound these numbers. The validation labels are materially noisier
+than the test labels: 27\% of confident detections match no annotator at all, and
+25--35\% of the remaining false negatives are boundary disagreements rather than
+misses, so absolute validation PQ is optimistic and only deltas are portable.
+The public leaderboard, in turn, is quantised at 0.01 and cannot resolve the
+effects we report; the accuracy ensemble is therefore selected on its validation
+PQ (0.4773), not on the leaderboard. The largest untested lever is data
+coverage: 5-fold training over all 707 images, rather than architectural change.
+
+\paragraph{Code quality.}
+Evaluation and submission share a single model registry, so a tuned rule cannot
+drift from the deployed one; probability maps are cached per inference path,
+which makes every rule and ensemble comparison in this report re-runnable on the
+same 107 files without a GPU; and the exact multi-annotator metric has one
+implementation, used by both the tuning sweeps and the figures. A 13-check
+verifier validates each submission CSV against the official format before upload.
 
 
 % ==================================== %
 %            ACKNOWLEDGMENT            %
 % ==================================== %
 \section{Acknowledgment}\label{sec:acknowledgment}
-    % Do not change
-    The organization of the Filament Segmentation Challenge 2026 is partially supported by the U.S. National Science Foundation (NSF) under Grant No. 2209912 and 2433781, directorate for Computer and Information Science and Engineering (CSE), and Office of Advanced Cyberinfrastructure (OAC), and Grant No. 2511630, AST Division Of Astronomical Sciences and MPS Directorate for Mathematical and Physical Sciences.
+    The Filament Segmentation Challenge 2026 is sponsored by the U.S. National
+    Science Foundation (NSF) National Solar Observatory (NSO) and its organization
+    is partially supported by NSF grants 2209912, 2433781 and 2511630 (CISE/CSE,
+    OAC, and AST/MPS).
 
-    The Filament Segmentation Challenge 2026 is sponsored by the U.S. National Science Foundation (NSF) National Solar Observatory (NSO). 
-
-    This work utilizes GONG data obtained by the NSO Integrated Synoptic Program, managed by the National Solar Observatory, which is operated by the Association of Universities for Research in Astronomy (AURA), Inc. under a cooperative agreement with the National Science Foundation and with contribution from the National Oceanic and Atmospheric Administration. The GONG network of instruments is hosted by the Big Bear Solar Observatory, High Altitude Observatory, Learmonth Solar Observatory, Udaipur Solar Observatory, Instituto de Astrofísica de Canarias, and Cerro Tololo Interamerican Observatory.
+    This work utilizes GONG data obtained by the NSO Integrated Synoptic Program,
+    managed by the National Solar Observatory, which is operated by the Association
+    of Universities for Research in Astronomy (AURA), Inc. under a cooperative
+    agreement with the National Science Foundation and with contribution from the
+    National Oceanic and Atmospheric Administration. The GONG network of instruments
+    is hosted by the Big Bear Solar Observatory, High Altitude Observatory,
+    Learmonth Solar Observatory, Udaipur Solar Observatory, Instituto de Astrofísica
+    de Canarias, and Cerro Tololo Interamerican Observatory.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{main}

@@ -1,5 +1,6 @@
 /data/*
 !/data/README.md
+.env
 /output/
 __pycache__/
 *.pyc
@@ -7,3 +8,11 @@ __pycache__/
 notebook_exec.log
 submissions/regenerated_*.csv
 submissions/example_prediction.png
+
+# LaTeX build artifacts. main.bbl is kept on purpose: the report rebuilds its
+# references without needing bibtex.
+*.aux
+*.blg
+*.log
+*.out
+*.synctex.gz
