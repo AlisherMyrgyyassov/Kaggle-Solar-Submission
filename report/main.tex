@@ -233,7 +233,7 @@ full-disk location.}
 \end{figure*}
 
 \paragraph{Cost.}
-Fig.~\ref{fig:cost} places the three operating points on the cost--quality plane.
+Fig.~\ref{fig:cost} compares the three operating points on cost and accuracy.
 MACs are analytic for one $2048^2$ forward and therefore do not depend on the
 measurement hardware. The submitted student
 sits $30\times$ left of the ensemble at the same public score, and the leaner S4
@@ -244,13 +244,14 @@ for the $8\times1024$ sliding window at equal PQ.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/cost.png}
-\Description{Row chart of three systems. Each row gives the parameter count, a dot on
-a shared log axis of inference MACs per image, and the validation PQ, in aligned
-columns. The student sits far left of the ensemble at almost the same score.}
-\caption{Inference cost against validation PQ on the 107-file split; the cost axis is
-logarithmic. MACs are analytic for one $2048^2$ forward, so the comparison does not
-depend on the measurement hardware. S3 needs $30\times$ fewer MACs than S2 for the
-same public score, and S4 a further 39\% fewer for one leaderboard quantum.}
+\Description{Row chart of three systems. Each row gives a dot on a shared log scale of
+inference MACs per image, and the validation PQ, in aligned columns. The student sits
+far left of the ensemble at almost the same score.}
+\caption{Inference cost against validation PQ on the 107-file split; the dot gives MACs
+per image on a logarithmic scale. MACs are analytic for one $2048^2$ forward, so the
+comparison does not depend on the measurement hardware. S3 needs $30\times$ fewer MACs
+than S2 for the same public score, and S4 a further 39\% fewer for one leaderboard
+quantum.}
 \label{fig:cost}
 \end{figure}
 
