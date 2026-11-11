@@ -23,13 +23,40 @@ from dataset import (
     get_inference_dataloader,
     load_and_parse_annotations,
 )
-from eval_pq_v2 import build_multi_gt, exact_pq, instances_to_rles
-from eval_pq import build_gt_maps
-from inference import stitch_batch
-from model import EMA
+from eval_pq_v2 import build_gt_maps, build_multi_gt, exact_pq, instances_to_rles
+from predict import stitch_batch
 from model_v2 import get_convnext_unet, get_loss_function, kd_mse_loss, kd_kl_loss, spine_heatmap_loss
-from model_edge import get_edgeatt_unet
 from preprocessing import label_instances, component_stats, keep_mask_from_stats, kept_area_rles
+
+
+class EMA:
+    """Exponential moving average of the trainable weights, updated per batch."""
+
+    def __init__(self, model, decay=0.999):
+        self.model = model
+        self.decay = decay
+        self.shadow, self.backup = {}, {}
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                self.shadow[name] = param.data.clone()
+
+    def update(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                self.shadow[name] = (self.decay * self.shadow[name]
+                                     + (1 - self.decay) * param.data)
+
+    def apply_shadow(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                self.backup[name] = param.data.clone()
+                param.data.copy_(self.shadow[name])
+
+    def restore(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                param.data.copy_(self.backup[name])
+        self.backup.clear()
 
 
 def build_val_gt(data, val_files):
@@ -225,19 +252,14 @@ def train(args):
         copy_paste=args.copy_paste, copy_paste_p=args.copy_paste_p,
     )
 
-    if args.arch == "edgeatt":
-        model = get_edgeatt_unet(config, encoder_name=args.encoder, pretrained=True, use_edge=True)
-    elif args.arch == "mhsa":
-        model = get_edgeatt_unet(config, encoder_name=args.encoder, pretrained=True, use_edge=False)
-    else:
-        dc = tuple(int(x) for x in args.decoder_channels.split(",")) if args.decoder_channels else None
-        model = get_convnext_unet(config, encoder_name=args.encoder, pretrained=True,
-                                  decoder_channels=dc, aux_spine=args.aux_spine,
-                                  head_upsample=args.head_upsample)
-        if dc:
-            print(f"Decoder channels: {dc}")
-        if args.aux_spine:
-            print(f"Aux spine head enabled (weight={args.spine_weight})")
+    dc = tuple(int(x) for x in args.decoder_channels.split(",")) if args.decoder_channels else None
+    model = get_convnext_unet(config, encoder_name=args.encoder, pretrained=True,
+                              decoder_channels=dc, aux_spine=args.aux_spine,
+                              head_upsample=args.head_upsample)
+    if dc:
+        print(f"Decoder channels: {dc}")
+    if args.aux_spine:
+        print(f"Aux spine head enabled (weight={args.spine_weight})")
     criterion = get_loss_function(args.alpha, args.beta, cldice_w=args.cldice_w)
     kd_fn = None
     if teacher_map:
@@ -421,7 +443,6 @@ if __name__ == "__main__":
     p.add_argument("--encoder", default="convnext_tiny")
     p.add_argument("--decoder_channels", default="",
                    help="Comma list, e.g. 128,64,32,16. Empty = smp default (256,128,64,32).")
-    p.add_argument("--arch", default="convnext", choices=["convnext", "edgeatt", "mhsa"])
     p.add_argument("--tag", default="")
     p.add_argument("--epochs", type=int, default=30)
     p.add_argument("--lr", type=float, default=1e-4)
@@ -432,8 +453,7 @@ if __name__ == "__main__":
     p.add_argument("--alpha", type=float, default=0.5)
     p.add_argument("--beta", type=float, default=0.5)
     p.add_argument("--mask_mode", default="single", choices=[
-        "union", "single", "majority", "staple_hard", "staple_soft",
-        "random_annotator", "multi_loss",
+        "union", "single", "majority", "random_annotator", "multi_loss",
     ])
     p.add_argument("--neg_ratio", type=float, default=0.0)
     p.add_argument("--pq_thr", type=float, default=0.35)

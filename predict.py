@@ -238,3 +238,37 @@ def predict_prob_map_full(image, model, config, tta=1, fast_mask=True, scale=1.0
     if scale != 1.0:
         prob = cv2.resize(prob, (w0, h0), interpolation=cv2.INTER_LINEAR)
     return prob
+
+
+def stitch_batch(batch, model, config):
+    """Run a batch of patches and stitch them back into one full-image probability map."""
+    patches = batch["patches"].squeeze(0)
+    coords = batch["coords"]
+    if isinstance(coords[0], list) and len(coords) == 1:
+        coords = coords[0]
+    filename = batch["filename"][0]
+    orig_h = int(batch["original_shape"][0][0])
+    orig_w = int(batch["original_shape"][1][0])
+    solar_mask = batch["solar_mask"][0].numpy()
+    scaled_h = int(batch["scaled_shape"][0][0])
+    scaled_w = int(batch["scaled_shape"][1][0])
+
+    patch_size = config.MODEL_INPUT_SIZE
+    stride = patch_size - 64
+    patch_preds = []
+    for i in range(0, len(patches), config.BATCH_SIZE):
+        batch_patches = patches[i:i + config.BATCH_SIZE].to(config.DEVICE)
+        out = model(batch_patches)
+        probs = torch.sigmoid(out).cpu().numpy()
+        patch_preds.extend([p.squeeze() for p in probs])
+
+    patch_info = [(None, None, int(x), int(y)) for [x, y] in coords]
+    full_prob = stitch_patches(
+        patch_info, patch_preds,
+        full_h=scaled_h, full_w=scaled_w,
+        patch_size=patch_size, stride=stride,
+    )
+    full_prob[solar_mask == 0] = 0
+    if (scaled_h, scaled_w) != (orig_h, orig_w):
+        full_prob = cv2.resize(full_prob, (orig_w, orig_h), interpolation=cv2.INTER_LINEAR)
+    return full_prob, filename, orig_h, orig_w

@@ -101,3 +101,32 @@ def labeled_area_rles(labels, stats, min_area):
 
 def instances_to_rles(labels, stats, min_area):
     return [rle for _, rle in labeled_area_rles(labels, stats, min_area)]
+
+
+def build_gt_maps(annotation_data, image_ids):
+    """Per-image GT instance map (int32 label image) plus instance areas, keyed by stem.
+
+    Used by training to score a validation pass without re-rasterising polygons.
+    """
+    info = {img["id"]: img for img in annotation_data["images"]}
+    anns_by = {}
+    for ann in annotation_data["annotations"]:
+        anns_by.setdefault(ann["image_id"], []).append(ann)
+
+    gt_maps = {}
+    n_inst = 0
+    for img_id in image_ids:
+        img = info[img_id]
+        stem = os.path.splitext(img["file_name"])[0]
+        rles = rasterize_instance_rles(anns_by.get(img_id, []), img["height"], img["width"])
+        h, w = img["height"], img["width"]
+        gt_map = np.zeros((h, w), dtype=np.int32)
+        areas = []
+        for g, rle in enumerate(rles, start=1):
+            m = mask_utils.decode(rle).astype(np.uint8)
+            gt_map[m > 0] = g
+            areas.append(int(m.sum()))
+        gt_maps[stem] = (gt_map, areas)
+        n_inst += len(rles)
+    print(f"GT instances on val: {n_inst} across {len(gt_maps)} images")
+    return gt_maps

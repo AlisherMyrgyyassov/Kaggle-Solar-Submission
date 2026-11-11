@@ -433,15 +433,8 @@ def build_file_mask_map(annotation_data, mode="single"):
 
     mode:
       single / union / majority -> uint8 0/255
-      staple / staple_hard -> uint8 0/255 STAPLE thresholded at 0.5
-      staple_soft -> float32 [0, 1] STAPLE posterior
     Files with no annotations get an all-zero mask.
     """
-    if mode in ("staple", "staple_hard", "staple_soft"):
-        from staple import build_staple_mask_map
-        kind = "global" if mode.endswith("_global") else "file"
-        return build_staple_mask_map(annotation_data, mode=mode, kind=kind)
-
     by_file = collect_annotator_polygons(annotation_data)
     out = {}
     for img in annotation_data["images"]:

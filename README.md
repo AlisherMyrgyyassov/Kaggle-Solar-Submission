@@ -74,6 +74,8 @@ fragmentation: 63% of false negatives are filaments the model never fires on.
 | `docs/COMPLIANCE.md` | each competition requirement mapped to the file that satisfies it |
 | `docs/RESULTS.md` | every reported number and the command that reproduces it |
 
+The tree carries only what reproduces the submission: inference, training, the exact metric, the tuning harness and the verifier. The v1 UltraUNet pipeline, the EdgeAttNet experiment and the older greedy evaluator were removed rather than shipped as dead code.
+
 ## Setup
 
 Python 3.11, pinned in `requirements.txt`:
