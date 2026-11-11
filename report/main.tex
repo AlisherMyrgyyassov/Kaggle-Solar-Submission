@@ -217,6 +217,43 @@ better in validation but lands one leaderboard quantum lower (0.37), which is
 within the public-subset noise floor. The historical 0.35 plateau was therefore
 a decision-rule and inference-path problem, not a model-capacity ceiling.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/qualitative.png}
+\Description{Six zoomed validation crops in a 3 by 2 grid, each with a full-disk
+locator inset and a letter above it. Gold marks the ground truth, teal the
+prediction, blue a second annotator. Panels (a,b) follow the annotated filament,
+(c,d) miss it, and (e,f) follow one annotator where two disagree.}
+\caption{Zoomed validation examples. Gold: ground truth; teal: prediction; blue:
+a second annotator. (a,b) the prediction follows thin barbs and a large curved
+filament; (c,d) two filaments are missed outright; (e,f) two cases where the
+annotators disagree and the prediction follows one of them. Insets show the
+full-disk location.}
+\label{fig:qual}
+\end{figure*}
+
+\paragraph{Cost.}
+Fig.~\ref{fig:cost} places the three operating points on the cost--quality plane.
+MACs are analytic for one $2048^2$ forward and therefore do not depend on the
+measurement hardware; marker area encodes parameter count. The submitted student
+sits $30\times$ left of the ensemble at the same public score, and the leaner S4
+buys a further 39\% of MACs for one leaderboard quantum. Wall-clock on one GPU
+follows the same ordering: 103\,ms per image single-pass for S3, against 278\,ms
+for the $8\times1024$ sliding window at equal PQ.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/cost.png}
+\Description{Scatter plot of validation PQ against inference cost in GMAC per image
+on a log axis, for the ensemble and the two students; marker area encodes parameter
+count. The student sits far left of the ensemble at almost the same height.}
+\caption{Inference cost against validation PQ. MACs are analytic for one $2048^2$
+forward, so the comparison does not depend on the measurement hardware; marker area
+encodes parameter count. S3 sits $30\times$ left of S2 at the same public score,
+and S4 a further 39\% left for one leaderboard quantum.}
+\label{fig:cost}
+\end{figure}
+
 \paragraph{Accuracy distributions.}
 On the 933 matched validation pairs, mean IoU is 0.689 (median 0.695) and mean
 Dice is 0.813 (median 0.820); Fig.~\ref{fig:dist} shows the distributions. The
@@ -287,20 +324,7 @@ sub-0.01 differences; we therefore report deltas and bootstrap intervals, not
 just absolute PQ. More positive training data (5-fold over all 707 images) is
 the most promising remaining lever.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.92\linewidth]{figures/qualitative.png}
-\Description{Six zoomed validation crops in a 3 by 2 grid, each with a full-disk
-locator inset and a letter above it. Gold marks the ground truth, teal the
-prediction, blue a second annotator. Panels (a,b) follow the annotated filament,
-(c,d) miss it, and (e,f) follow one annotator where two disagree.}
-\caption{Zoomed validation examples. Gold: ground truth; teal: prediction; blue:
-a second annotator. (a,b) the prediction follows thin barbs and a large curved
-filament; (c,d) two filaments are missed outright; (e,f) two cases where the
-annotators disagree and the prediction follows one of them. Insets show the
-full-disk location.}
-\label{fig:qual}
-\end{figure*}
+
 
 \paragraph{Qualitative comparison.}
 Fig.~\ref{fig:qual} shows zoomed validation examples. The prediction follows the
