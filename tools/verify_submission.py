@@ -55,7 +55,7 @@ def verify(path, stems=None):
         c["n_images_with_rows"] = int(split[0].nunique())
         c["all_test_images_covered"] = bool(split[0].nunique() == len(stems))
     else:
-        c["all_stems_in_test_set"] = True
+        c["all_stems_in_test_set"] = None      # skipped: the test images are not here
         c["n_images_with_rows"] = int(split[0].nunique())
 
     c["rle_charset_ok"] = bool(
@@ -92,7 +92,8 @@ def verify(path, stems=None):
     )
     c["all_pass"] = all(v for k, v in c.items()
                         if k not in ("sha256", "n_rows", "n_images_with_rows",
-                                     "all_test_images_covered"))
+                                     "all_test_images_covered")
+                        and v is not None)     # None = check skipped, not failed
     return c
 
 
@@ -116,15 +117,20 @@ def main():
              "stems_without_underscore", "ids_unique", "rle_charset_ok",
              "all_stems_in_test_set", "decode_2048_ok", "roundtrip_identical",
              "no_empty_masks", "pixel_disjoint_dense", "pandas_reread_identical"]
-    n_pass = 0
+    n_pass = n_skip = 0
     for k in order:
         if k in c:
+            if c[k] is None:
+                n_skip += 1
+                print(f"  SKIP  {k}  (needs the test images)")
+                continue
             n_pass += bool(c[k])
             print(f"  {'PASS' if c[k] else 'FAIL'}  {k}")
     if "all_test_images_covered" in c:
         print(f"  {'INFO' if not c['all_test_images_covered'] else 'PASS'}  all_test_images_covered"
               f"  ({c['n_images_with_rows']}/{len(stems)}) [empty images are legitimate]")
-    print(f"{n_pass}/{len([k for k in order if k in c])} checks pass")
+    total = len([k for k in order if k in c])
+    print(f"{n_pass}/{total} checks pass" + (f", {n_skip} skipped" if n_skip else ""))
     sys.exit(0 if c["all_pass"] else 1)
 
 
