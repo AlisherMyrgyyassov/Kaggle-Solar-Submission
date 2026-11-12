@@ -40,24 +40,22 @@
 \@ifundefined{NAT@parse@date}{}{\def\NAT@parse@date#1#2#3#4#5#6@@{\NAT@parse@date@orig#1#2#3#4#5#6@@\def\NAT@tempyear{0000}\def\NAT@tempexlab{{?}}\ifx\NAT@year\NAT@tempyear\ifx\NAT@exlab\NAT@tempexlab\def\NAT@date{[n.\,d.]}\else\edef\NAT@date{[n.\,d.]\NAT@exlab}\fi\fi}}
 \makeatother
 
-\bibitem[{Ahmadzadeh} et~al\mbox{.}(2024)]%
+\bibitem[Ahmadzadeh et~al\mbox{.}(2024)]%
         {ahmadzadeh2024dataset}
-\bibfield{author}{\bibinfo{person}{Azim {Ahmadzadeh}}, \bibinfo{person}{Rohan
-  {Adhyapak}}, \bibinfo{person}{Kartik {Chaurasiya}},
-  \bibinfo{person}{Laxmi~Alekhya {Nagubandi}}, \bibinfo{person}{V. {Aparna}},
-  \bibinfo{person}{Petrus~C. {Martens}}, \bibinfo{person}{Alexei {Pevtsov}},
-  \bibinfo{person}{Luca {Bertello}}, \bibinfo{person}{Alexander {Pevtsov}},
-  \bibinfo{person}{Naomi {Douglas}}, \bibinfo{person}{Samuel {McDonald}},
-  \bibinfo{person}{Apaar {Bawa}}, \bibinfo{person}{Eugene {Kang}},
-  \bibinfo{person}{Riley {Wu}}, \bibinfo{person}{Dustin~J. {Kempton}},
-  \bibinfo{person}{Aya {Abdelkarem}}, \bibinfo{person}{Patrick~M. {Copeland}},
-  {and} \bibinfo{person}{Sri~Harsha {Seelamneni}}.}
-  \bibinfo{year}{2024}\natexlab{}.
-\newblock \showarticletitle{{A dataset of manually annotated filaments from
-  H-alpha observations}}. In \bibinfo{booktitle}{\emph{Nature Scientific Data}}
-  \emph{(\bibinfo{series}{Nature Scientific Data}, Vol.~\bibinfo{volume}{11})}.
-  \bibinfo{publisher}{Springer}, Article \bibinfo{articleno}{1031},
-  \bibinfo{numpages}{1031}~pages.
+\bibfield{author}{\bibinfo{person}{Azim Ahmadzadeh}, \bibinfo{person}{Rohan
+  Adhyapak}, \bibinfo{person}{Kartik Chaurasiya},
+  \bibinfo{person}{Laxmi~Alekhya Nagubandi}, \bibinfo{person}{V. Aparna},
+  \bibinfo{person}{Petrus~C. Martens}, \bibinfo{person}{Alexei~A. Pevtsov},
+  \bibinfo{person}{Luca Bertello}, \bibinfo{person}{Naomi Douglas},
+  \bibinfo{person}{Samuel McDonald}, \bibinfo{person}{Apaar Bawa},
+  \bibinfo{person}{Eugene Kang}, \bibinfo{person}{Riley Wu},
+  \bibinfo{person}{Dustin~J. Kempton}, \bibinfo{person}{Aya Abdelkarem},
+  \bibinfo{person}{Patrick~M. Copeland}, {and} \bibinfo{person}{Sri~Harsha
+  Seelamneni}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{A dataset of manually annotated filaments from
+  H-alpha observations}.
+\newblock \bibinfo{journal}{\emph{Scientific Data}} \bibinfo{volume}{11},
+  \bibinfo{number}{1} (\bibinfo{year}{2024}), \bibinfo{pages}{1031}.
 \newblock
 \href{https://doi.org/10.1038/s41597-024-03876-y}{doi:\nolinkurl{10.1038/s41597-024-03876-y}}
 
