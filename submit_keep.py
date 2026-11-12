@@ -7,9 +7,10 @@
 --path patch  : the original 8x1024 sliding window (`predict_prob_map`) — this is
                 the path the val probability caches were built with, so it is the
                 configuration the tuned rule was validated on.
---path full   : whole-image single forward (+ --tta 1/4/8), ~2.7x faster and
-                -50% MACs for the same PQ (see predict.py). Only use it with a
-                rule tuned on a matching `--pt full2048*` cache.
+--path full   : whole-image single forward (+ --tta 1/4/8), about 7x faster in the
+                forward pass for the same PQ (37 ms against 276 ms per image on one
+                RTX 4070; see predict.py). Only use it with a rule tuned on a
+                matching `--pt full2048*` cache.
 """
 import os
 import sys

@@ -9,10 +9,6 @@ notebook_exec.log
 submissions/regenerated_*.csv
 submissions/example_prediction.png
 
-# LaTeX build artifacts. main.bbl is kept on purpose: the report rebuilds its
-# references without needing bibtex.
-*.aux
-*.blg
-*.log
-*.out
-*.synctex.gz
+# The technical report is submitted with the entry, not published in this
+# repository. It stays in the working tree for local builds only.
+/report/

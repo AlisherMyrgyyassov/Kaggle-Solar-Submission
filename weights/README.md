@@ -1,9 +1,9 @@
 # Weights
 
-| File | System | Params | Val PQ | Rule |
+| File | System | Params | Val PQ | Rule (low/close/peak/area/mean) |
 |---|---|---|---|---|
-| `atto_dec128_full_randann_swa.pth` | **submitted S3**: ConvNeXt-atto, decoder 128/64/32/16, KD5 + random_annotator + SWA | 4.28 M | 0.4591 | `0.35/0/0.99/100/0.85` |
-| `atto_dec64_full_randann_swa.pth` | S4 frontier: decoder 64/32/16/8 | 3.75 M | 0.4599 | `0.30/0/0.99/100/0.85` |
+| `atto_dec128_full_randann_swa.pth` | **submitted student**: ConvNeXt-atto, decoder 128/64/32/16, trained on every annotator with distillation and weight averaging | 4.28 M | 0.4591 | `0.35/0/0.99/100/0.85` |
+| `atto_dec64_full_randann_swa.pth` | narrow student: same encoder, decoder 64/32/16/8 | 3.75 M | 0.4599 | `0.30/0/0.99/100/0.85` |
 
 SHA-256:
 
@@ -20,6 +20,6 @@ model, spec, ck = load_checkpoint("atto_dec128_full_randann_swa", "weights",
                                   device, half=True)
 ```
 
-The accuracy reference (S2, 171 M, val 0.4773) needs four 1024-px checkpoints
-(~650 MB); it is reported as a comparison only and is not required to reproduce
-the submitted S3 CSV.
+The four-model ensemble (171 M, val 0.4773) needs its four 1024-px checkpoints
+(~650 MB). It is reported as a comparison only and is not required to reproduce the
+submitted CSV.

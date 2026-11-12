@@ -31,7 +31,7 @@ tuning code is `keep_sweep.py`, and it needs the cached validation maps to re-ru
 
 ## Reading the paper
 
-`report/main.pdf` — 4 pages. Table 1 has the three systems; Figure 2 measured throughput;
+The submitted report has 4 pages. Table 1 has the three systems; Figure 2 measured throughput;
 Figure 3 six zoomed validation examples; Figure 4 the IoU/Dice and overlap-partner
 distributions; Table 2 the bootstrap
 intervals for the rule and fine-tune effects.

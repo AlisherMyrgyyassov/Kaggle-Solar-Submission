@@ -13,10 +13,11 @@ four-model ensemble with **40× fewer parameters** and **9.5× higher throughput
 prediction follows thin barbs and a large curved body; (c,d) filaments it misses; (e,f) cases
 where two annotators disagree and the prediction follows one. Each full-disk inset locates the crop.*
 
-**[4-page technical report](report/main.pdf)** ·
 **[Pipeline notebook](notebooks/pipeline.ipynb)** ·
 **[Compliance checklist](docs/COMPLIANCE.md)** ·
 **[Where every number comes from](docs/RESULTS.md)**
+
+The 4-page technical report is submitted with the entry and is not part of this repository.
 
 ## Verify it yourself
 
@@ -64,7 +65,6 @@ than fragmentation: 63% of false negatives are filaments the model never fires o
 | Path | Contents |
 |---|---|
 | `notebooks/pipeline.ipynb` | the whole pipeline, executed, training optional |
-| `report/main.pdf` | 4-page technical report (LaTeX source and figures alongside) |
 | `weights/` | the submitted student weight (16.4 MiB) and the narrow student weight (14.4 MiB) |
 | `submissions/` | the submitted CSV, the lean and accuracy reference CSVs |
 | `predict.py`, `preprocessing.py` | single-pass + TTA inference; disk gate and KEEP primitives |
@@ -129,7 +129,7 @@ python submit_keep.py --preset atto_dec64_randann_swa --path full --tta 8 `
 ## Training
 
 The submitted student is a 6-epoch fine-tune from the complete-GT dec128 checkpoint:
-1024-px crops, batch 4, AdamW lr 3e-5, KD5 (MSE to five teachers, weight 5),
+1024-px crops, batch 4, AdamW lr 3e-5, distillation from five teachers (MSE, weight 5),
 `--mask_mode random_annotator`, SWA over the last 3 epochs, checkpoints selected by
 full-image PQ under the deployed KEEP rule. The parent model was trained for 30 epochs at
 lr 1e-4 on first-annotator targets. `train_v2.py` is the entry point; the notebook runs a
