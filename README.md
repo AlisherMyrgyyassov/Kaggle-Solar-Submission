@@ -1,10 +1,10 @@
 # Efficient Solar Filament Segmentation — submission repository
 
-**4.28 M-parameter ConvNeXt-atto U-Net · val PQ 0.4591 on 107 files · public LB 0.38**
+**4.28 M-parameter ConvNeXt-atto U-Net · 26.9 images/s · val PQ 0.4591 on 107 files · public LB 0.38**
 
 Submitted to the [Solar Filament Segmentation Challenge 2026](https://www.kaggle.com/competitions/filament-segmentation-2026)
 (MAGFiLO / GONG H-α, IEEE BigData Cup). It reaches the same leaderboard score as a 171 M
-four-model ensemble with **40× fewer parameters** and **~30× less compute** per image.
+four-model ensemble with **40× fewer parameters** and **9.5× higher throughput** per image.
 
 ![Six zoomed validation windows from the submitted model, with ground-truth and predicted contours.](docs/figures/hero.jpg)
 
@@ -42,21 +42,22 @@ Set `TRAIN = True` in its first cell to train instead of loading the shipped wei
 
 ## Results
 
-![Three operating points: validation PQ against inference cost.](docs/figures/points.png)
-
-*S2, S3 and S4 at one forward pass per model. Validation PQ on a common 0.45–0.48 scale;
-inference cost on a log axis.*
-
-| System | Params | MACs / image | Val PQ (107 files) | Public LB |
+| System | Params | Images/s | Val PQ (107 files) | Public LB |
 |---|---|---|---|---|
-| S2 accuracy reference (4×1024 ensemble) | 171.0 M | 3.23 TMAC | 0.4773 | 0.38 |
-| **S3 submitted student** | **4.28 M** | **107 GMAC** | **0.4591** | **0.38** |
-| S4 lean frontier (64-wide decoder) | 3.75 M | 64.8 GMAC | 0.4599 | 0.37 |
+| Four-model ensemble (accuracy reference) | 171.0 M | 2.8 | 0.4773 | 0.38 |
+| **Submitted student** | **4.28 M** | **26.9** | **0.4591** | **0.38** |
+| Narrow student (64-wide decoder) | 3.75 M | 33.1 | 0.4599 | 0.37 |
 
-Under the official IoU>0.5 matching the submitted system has **zero** one-to-many and
-many-to-one relations; at IoU>0 only 2.4% of ground-truth instances and 5.1% of predictions
-overlap more than one partner. The remaining error is under-detection rather than
-fragmentation: 63% of false negatives are filaments the model never fires on.
+Throughput is a full 2048×2048 image per second, one RTX 4070, batch 1, FP16, 30 images
+after warm-up, one forward pass per model (`tools/bench_latency.py`); the eight-view
+augmentation used at submission applies to all three and is not included. End to end —
+forward plus KEEP and RLE encoding — the submitted student takes 71 ms per image,
+14 images/s (`tools/bench_endtoend.py`).
+
+Under the official IoU>0.5 matching every instance has at most one partner by construction.
+The informative count is at any overlap: at IoU>0, 2.4% of ground-truth instances and 5.1%
+of predictions overlap more than one partner. The remaining error is under-detection rather
+than fragmentation: 63% of false negatives are filaments the model never fires on.
 
 ## What is in the repository
 
@@ -64,13 +65,14 @@ fragmentation: 63% of false negatives are filaments the model never fires on.
 |---|---|
 | `notebooks/pipeline.ipynb` | the whole pipeline, executed, training optional |
 | `report/main.pdf` | 4-page technical report (LaTeX source and figures alongside) |
-| `weights/` | the submitted S3 weight (16.4 MiB) and the lean S4 weight (14.4 MiB) |
+| `weights/` | the submitted student weight (16.4 MiB) and the narrow student weight (14.4 MiB) |
 | `submissions/` | the submitted CSV, the lean and accuracy reference CSVs |
 | `predict.py`, `preprocessing.py` | single-pass + TTA inference; disk gate and KEEP primitives |
 | `model_v2.py`, `presets.py` | ConvNeXt U-Net; one registry shared by evaluation and submission |
 | `eval_pq_v2.py` | the exact multi-annotator Panoptic Quality used in the report |
 | `train_v2.py` | training and fine-tuning entry point (the notebook drives it) |
 | `tools/verify_submission.py` | 13-check submission CSV verifier |
+| `tools/bench_latency.py`, `tools/bench_endtoend.py` | the timing commands behind the report's throughput figure (need a CUDA GPU) |
 | `docs/COMPLIANCE.md` | each competition requirement mapped to the file that satisfies it |
 | `docs/RESULTS.md` | every reported number and the command that reproduces it |
 
@@ -116,7 +118,7 @@ images. Use CUDA with `--half`.
 The nested-CV optimum was `min_area=300`; 100 and 300 are indistinguishable on validation
 (0.45906 vs 0.45909), and the submitted CSV uses 100.
 
-## Reproduce the lean S4 point
+## Reproduce the narrow student point
 
 ```powershell
 python submit_keep.py --preset atto_dec64_randann_swa --path full --tta 8 `
@@ -144,8 +146,8 @@ file-level bootstrap for the rule and ensemble choices quoted in the report.
 
 Only the H-α competition images are used at inference: the solar-disk gate is computed from
 each test image itself, and no external ground-truth metadata, test labels or test-time
-adaptation is used. The accuracy reference S2 is reported for comparison; only the submitted
-S3 and lean S4 weights are shipped. Per-requirement detail:
+adaptation is used. The four-model ensemble is reported for comparison only; only the
+submitted student and narrow student weights are shipped. Per-requirement detail:
 [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md).
 
 ## Licence
