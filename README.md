@@ -78,7 +78,7 @@ than fragmentation: 63% of false negatives are filaments the model never fires o
 | Path | Contents |
 |---|---|
 | `notebooks/pipeline.ipynb` | the whole pipeline, executed, training optional |
-| `weights/` | the submitted student weight (16.4 MiB) and the narrow student weight (14.4 MiB) |
+| `weights/` | the submitted model (16.4 MiB) and the narrow student, a comparison row (14.4 MiB) |
 | `submissions/` | the submitted CSV, plus the narrow-student and ensemble CSVs as reference outputs |
 | `predict.py`, `preprocessing.py` | single-pass + TTA inference; disk gate and KEEP primitives |
 | `model_v2.py`, `presets.py` | ConvNeXt U-Net; one registry shared by evaluation and submission |
@@ -91,10 +91,11 @@ than fragmentation: 63% of false negatives are filaments the model never fires o
 
 The tree carries only what reproduces the submission: inference, training, the exact metric, the tuning harness and the verifier. The v1 UltraUNet pipeline, the EdgeAttNet experiment and the older greedy evaluator were removed rather than shipped as dead code.
 
-Only the two student checkpoints ship. The other configurations registered in `presets.py` are the
-comparison points in Table 1 of the report (a ConvNeXt-tiny student, a ResNet-34d student, the
-four-model teacher ensemble and its members); their weights are not part of this release, and
-nothing in the reproduction path needs them.
+This repository contains two checkpoints and one submission. The submitted model is the one listed
+above; the second file is the narrow student, kept because it is a comparison row in Table 1 of the
+report. The other configurations registered in `presets.py` (a ConvNeXt-tiny student, a ResNet-34d
+student, the teacher ensemble and its members) are comparison points whose weights are not
+included, and nothing in the reproduction path needs them.
 
 ## Setup
 
