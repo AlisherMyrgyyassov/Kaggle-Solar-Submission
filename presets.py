@@ -1,4 +1,9 @@
-"""Shared model/ensemble registry for the 2026-11-03 KEEP-rule campaign.
+"""Model and ensemble registry for this competition entry.
+
+Two checkpoints ship in ``weights/``: ``atto_dec128_full_randann_swa`` (the submitted
+student) and ``atto_dec64_full_randann_swa`` (the narrow student). Every other tag
+below is a comparison point from the report; its ``.pth`` is not in this repository,
+and nothing in the reproduction path needs it.
 
 One place for (a) how to rebuild each checkpoint, and (b) which checkpoints make
 up each candidate ensemble. Used by cache_val_probs.py, keep_sweep.py and

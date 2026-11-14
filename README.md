@@ -4,7 +4,7 @@
 
 Submitted to the [Solar Filament Segmentation Challenge 2026](https://www.kaggle.com/competitions/filament-segmentation-2026)
 (MAGFiLO / GONG H-α, IEEE BigData Cup). It reaches the same leaderboard score as a 171 M
-four-model ensemble with **40× fewer parameters** and **9.5× higher throughput** per image.
+teacher ensemble with **40× fewer parameters** and **9.5× higher throughput** per image.
 
 ![Six zoomed validation windows from the submitted model, with ground-truth and predicted contours.](docs/figures/hero.jpg)
 
@@ -18,6 +18,19 @@ where two annotators disagree and the prediction follows one. Each full-disk ins
 **[Where every number comes from](docs/RESULTS.md)**
 
 The 4-page technical report is submitted with the entry and is not part of this repository.
+
+## What was submitted
+
+The entry is one CSV, produced by one checkpoint with one post-processing rule.
+
+| Item | What it is |
+|---|---|
+| **Submission file** | `submissions/submission_keep_s3_light.csv` — 1,279 rows over 177 of the 180 test images (three images contain no filament). This is the exact file uploaded to Kaggle. sha256 `9adf36a4e28ae44368f59e644f26fa105e7456ed7d8f5ed07abf09adc92f8217` |
+| **Checkpoint** | `weights/atto_dec128_full_randann_swa.pth` — ConvNeXt-atto U-Net, 128-wide decoder, 4.28 M parameters. sha256 `3ad0992aeb808f3892223367eaf84a4d1f307424eb5baefed31af87cf783973d` |
+| **Post-processing** | the decoupled acceptance rule at `t_low=0.35, close=0, t_peak=0.99, a_min=100, mean=0.85`, applied to the averaged maps of eight dihedral views from a single 2048×2048 forward pass |
+
+The command that regenerates the submission from these three is under *Reproduce the submitted
+predictions without retraining* below; it reproduces 1,277 of the 1,279 rows byte for byte.
 
 ## Verify it yourself
 
@@ -45,7 +58,7 @@ Set `TRAIN = True` in its first cell to train instead of loading the shipped wei
 
 | System | Params | Images/s | Val PQ (107 files) | Public LB |
 |---|---|---|---|---|
-| Four-model ensemble (accuracy reference) | 171.0 M | 2.8 | 0.4773 | 0.38 |
+| Teacher ensemble | 171.0 M | 2.8 | 0.4773 | 0.38 |
 | **Submitted student** | **4.28 M** | **26.9** | **0.4591** | **0.38** |
 | Narrow student (64-wide decoder) | 3.75 M | 33.1 | 0.4599 | 0.37 |
 
@@ -66,7 +79,7 @@ than fragmentation: 63% of false negatives are filaments the model never fires o
 |---|---|
 | `notebooks/pipeline.ipynb` | the whole pipeline, executed, training optional |
 | `weights/` | the submitted student weight (16.4 MiB) and the narrow student weight (14.4 MiB) |
-| `submissions/` | the submitted CSV, the lean and accuracy reference CSVs |
+| `submissions/` | the submitted CSV, plus the narrow-student and ensemble CSVs as reference outputs |
 | `predict.py`, `preprocessing.py` | single-pass + TTA inference; disk gate and KEEP primitives |
 | `model_v2.py`, `presets.py` | ConvNeXt U-Net; one registry shared by evaluation and submission |
 | `eval_pq_v2.py` | the exact multi-annotator Panoptic Quality used in the report |
@@ -77,6 +90,11 @@ than fragmentation: 63% of false negatives are filaments the model never fires o
 | `docs/RESULTS.md` | every reported number and the command that reproduces it |
 
 The tree carries only what reproduces the submission: inference, training, the exact metric, the tuning harness and the verifier. The v1 UltraUNet pipeline, the EdgeAttNet experiment and the older greedy evaluator were removed rather than shipped as dead code.
+
+Only the two student checkpoints ship. The other configurations registered in `presets.py` are the
+comparison points in Table 1 of the report (a ConvNeXt-tiny student, a ResNet-34d student, the
+four-model teacher ensemble and its members); their weights are not part of this release, and
+nothing in the reproduction path needs them.
 
 ## Setup
 
